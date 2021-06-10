@@ -1,0 +1,217 @@
+from statsmodels import datasets
+import pandas as pd
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+
+raw_set = datasets.get_rdataset("co2", package='datasets')
+type(raw_set)
+raw = raw_set.data
+raw.head()
+
+
+raw.info()
+
+# 종속변수 Y 를 다루는 법을 배우는 중이다.
+
+plt.bar(raw.time, raw.value)
+
+plt.plot(raw.time, raw.value)
+
+result = sm.OLS.from_formula(formula='value~time', data=raw).fit() 
+result.summary()
+
+result.params
+
+trend = result.params[0] + result.params[1] * raw.time
+plt.plot(raw.time, raw.value, raw.time, trend)
+plt.show()
+
+
+# 추세가 살짝 안맞는거 같으니까 2차로 해보자.
+
+result = sm.OLS.from_formula(formula='value~time+I(time**2)', data=raw).fit()
+result.summary()
+
+
+trend = result.params[0] + result.params[1] * raw.time  + result.params[2] * raw.time**2
+plt.plot(raw.time, raw.value, raw.time, trend)
+plt.show()
+
+
+result.resid
+
+plt.plot(raw.time, result.resid) # 추세를 제거해본 결과.
+
+# adf, kpss
+# 둘다 정상성을 확인하는 테스트이다.
+# ADF는 추세만을, KPSS는 계절성만을 확인한다.
+# ADF 검증조건 : p-value < 0.05 이면 추세가 제거 된것.
+# KPSS 검증조건 : p-value > 0.05 이면 정상인다.
+
+def stationarity_adf_test(Y_Data, Target_name):
+    if len(Target_name) == 0:
+        Stationarity_adf = pd.Series(sm.tsa.stattools.adfuller(Y_Data)[0:4],
+                                     index=['Test Statistics', 'p-value', 'Used Lag', 'Used Observations'])
+        for key, value in sm.tsa.stattools.adfuller(Y_Data)[4].items():
+            Stationarity_adf['Critical Value(%s)'%key] = value
+            Stationarity_adf['Maximum Information Criteria'] = sm.tsa.stattools.adfuller(Y_Data)[5]
+            Stationarity_adf = pd.DataFrame(Stationarity_adf, columns=['Stationarity_adf'])
+    else:
+        Stationarity_adf = pd.Series(sm.tsa.stattools.adfuller(Y_Data[Target_name])[0:4],
+                                     index=['Test Statistics', 'p-value', 'Used Lag', 'Used Observations'])
+        for key, value in sm.tsa.stattools.adfuller(Y_Data[Target_name])[4].items():
+            Stationarity_adf['Critical Value(%s)'%key] = value
+            Stationarity_adf['Maximum Information Criteria'] = sm.tsa.stattools.adfuller(Y_Data[Target_name])[5]
+            Stationarity_adf = pd.DataFrame(Stationarity_adf, columns=['Stationarity_adf'])
+    return Stationarity_adf
+
+def stationarity_kpss_test(Y_Data, Target_name):
+    if len(Target_name) == 0:
+        Stationarity_kpss = pd.Series(sm.tsa.stattools.kpss(Y_Data)[0:3],
+                                      index=['Test Statistics', 'p-value', 'Used Lag'])
+        for key, value in sm.tsa.stattools.kpss(Y_Data)[3].items():
+            Stationarity_kpss['Critical Value(%s)'%key] = value
+            Stationarity_kpss = pd.DataFrame(Stationarity_kpss, columns=['Stationarity_kpss'])
+    else:
+        Stationarity_kpss = pd.Series(sm.tsa.stattools.kpss(Y_Data[Target_name])[0:3],
+                                      index=['Test Statistics', 'p-value', 'Used Lag'])
+        for key, value in sm.tsa.stattools.kpss(Y_Data[Target_name])[3].items():
+            Stationarity_kpss['Critical Value(%s)'%key] = value
+            Stationarity_kpss = pd.DataFrame(Stationarity_kpss, columns=['Stationarity_kpss'])
+    return Stationarity_kpss
+
+stationarity_adf_test(result.resid, # 잔차
+                      [])
+
+# 005보다 크기때문에 추세가 어느정도 있구나 라고 알면 된다.
+
+stationarity_kpss_test(result.resid, [])
+
+'''
+ACF
+자기상관(Autocorrelation)에 대한 수치를 확인
+1, -1 에 가까울수록 상관성이 있다.
+과거의 자신과 비교를 해서 추세를 지우는 것이다.
+
+'''
+sm.graphics.tsa.plot_acf(result.resid, lags=100)
+plt.show()
+
+# 정상성을 만들고자 함은 과거의 값과 현제의 그래프가 상관이 없어야 한다.
+# 척도 셋다 참이 나와야 한다. 
+# 안쪽에 파란선안에 값들이 들어갈수록 좋은거다고 생각 할 수 있다.
+
+#ACF의 원리
+raw.value.shift(1) # 한칸씩 밑으로 보낼 수 있다. 갯수가 늘어나진 않는다.
+
+## 1cycle 전에 것을 빼서 추세를 제거하는 방법. 아래코드처럼 쓴다.
+data = raw.value - raw.value.shift(1) 
+data
+
+raw.value.diff(1) # 위와 동일
+
+# 몇 step 전과 비교해야합니까 -> 그건 해봐야 안다.
+plt.plot(raw.time[1:], raw.value.diff(1).dropna())
+plt.show()
+
+display(stationarity_adf_test(raw.value.diff(1).dropna(), []))
+display(stationarity_kpss_test(raw.value.diff(1).dropna(), []))
+sm.graphics.tsa.plot_acf(raw.value.diff(1).dropna(), lags=100)
+plt.show()
+
+# 자기상관측면에서 계절성 제거가 안되었네~~ 라고 하는 것.
+# 뭔가 12개 빼보면 될거같은데... 하면서 이거저거 해보는 것이다.
+
+
+display(stationarity_adf_test(raw.value.diff(12).dropna(), []))
+display(stationarity_kpss_test(raw.value.diff(12).dropna(), []))
+sm.graphics.tsa.plot_acf(raw.value.diff(12).dropna(), lags=100)
+plt.show()
+
+# 또다른 계절성 제거법
+
+raw_set = datasets.get_rdataset("deaths", package="MASS")
+raw = raw_set.data
+
+raw.info()
+
+raw.head()
+
+raw.tail()
+
+raw.describe()
+
+plt.plot(raw.time, raw.value)
+plt.show()
+
+# 이런 데이터도 계절성이 뚜렷하게 보이는구나
+
+display(stationarity_adf_test(raw.value, []))
+display(stationarity_kpss_test(raw.value, []))
+sm.graphics.tsa.plot_acf(raw.value, lags=50, title='ACF') 
+plt.show()
+
+# 발표할때 각 검증의 p-value 값을 모아서 정리하면 좋다.
+
+# 시간변수를 추출해보자 이 알수 없는 값들을 알수 있게 해보자 사실 바꿀 일 별로 없다.
+raw.time=pd.date_range('1974-01-01', periods=len(raw), freq='M') # 옵션값 Y 도 있다 -> 한칸당 연도
+raw.time
+
+
+raw['month'] = raw["time"].dt.month
+raw['month']
+
+ raw.time.dt.month[:20] # 아 이게 한달 단위 인가보네
+
+raw.head() # ㅇㅎ 월별로 column 이 하나 생겼네
+
+# 시계열은 변수x에 들어갈 수 있는 경우의 수가 굉장히 많다.
+# 뭐가 학습이 잘 될지는 역시 해봐야 아는거다.
+
+result = sm.OLS.from_formula(formula='value ~ C(month) - 1',  #formula : Y~ X, -1은 절편을 반영하지 않겠다는 의미
+                             data=raw).fit()
+display(result.summary())
+
+
+plt.plot(raw.time, raw.value, raw.time, result.fittedvalues)
+plt.show()
+
+# 주기와 계절성은 조금 다른의미로 쓰인다 궁금하면 알아봐라.
+
+# 둘간의 차이를 구해서 정상성이 있는지 확인하면 된다.
+plt.plot(raw.time, result.resid)
+plt.show()
+
+#예쁘진 않지만 계절성이 없어진건 알 수 있다.
+
+# 여기다가도 log, 지수, diff 한번더 등등 적용할 수 있다.
+
+
+display(stationarity_adf_test(result.resid, []))
+display(stationarity_kpss_test(result.resid, []))
+sm.graphics.tsa.plot_acf(result.resid, lags=50, title='ACF') 
+plt.show()
+
+# 잘나왔네
+# 근데 값은 그림과 좀 다르네
+# 세 척도상 다 정상성이 안나올 수 있다. 기준을 정해서 한가지 모델을 체택하면 된다.
+
+
+
+
+
+
+
+seasonal_lag = 3
+plt.plot(raw.time[seasonal_lag:], raw.value.diff(seasonal_lag).dropna(), label='Lag{}'.format(seasonal_lag))
+seasonal_lag = 6
+plt.plot(raw.time[seasonal_lag:], raw.value.diff(seasonal_lag).dropna(), label='Lag{}'.format(seasonal_lag))
+seasonal_lag = 12
+plt.plot(raw.time[seasonal_lag:], raw.value.diff(seasonal_lag).dropna(), label='Lag{}'.format(seasonal_lag))
+plt.title('Lagged')
+plt.legend()
+plt.show()
+
+#  f스트림! 알면 좋다
+
+# 음 12가 정상성에 가까운거 같은데 라는 예상을 할 수 있다.
