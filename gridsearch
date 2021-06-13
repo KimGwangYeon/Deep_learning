@@ -1,0 +1,30 @@
+# 이번엔 그리드서치로 하이퍼파라미터를 튜닝해보자!!
+from sklearn.model_selection import GridSearchCV
+
+# 그리드서치사용할때 변수를 따로 만들어둔다.
+param_grid = {
+    'n_estimators' : [50, 100],
+    'max_depth' : [1, 10]
+}
+
+# 모델을 한번 써볼텐데 여기서는 LightGBM을 써보자
+model = LGBMRegressor(random_state=random_state)
+
+# gridsearchCV를 사용하는 방법은 그리드 서치 안에 모델과 파람을 넣어서 쓴다.
+grid_model = GridSearchCV(model, param_grid = param_grid,
+                          scoring = 'neg_mean_squared_error',
+                          cv=5, verbose=1, n_jobs = 5)
+grid_model.fit(train, y)
+
+# gridsearch 쓰고나면 결과들이 
+grid_model.cv_results_
+# 로 들어간다.
+
+# 파라미터 조합은 params에 들어가있고 점수는 mean_test_score에 들어가있다.
+params= grid_model.cv_results_['params']
+score = grid_model.cv_results_['mean_test_score']
+
+# 파라미터 조합과 점수를 데이터프레임으로 만들자!!
+results = pd.DataFrame(params)
+results['score']= score
+results
