@@ -1,0 +1,22 @@
+NLP 분석을 할 때 단어를 정규화 하고 어간을 추출한다.
+from nltk.stem import PorterStemmer
+
+ps = PorterStemmer()
+
+text_eng = "Smooth like butter Like a criminal undercover Gon' pop like trouble Breakin' into your heart like that Cool shade stunner Yeah I owe it all to my mother Hot like summer Yeah I'm makin' you sweat like that"
+
+words = word_tokenize(text_eng)
+
+[ps.stem(w) for w in words] # list내포로 만들기 어간추출한거임
+
+# 표제어를 추출하기 위해 다운로드
+nltk.download('wordnet')
+
+from nltk.stem import WordNetLemmatizer
+wl = WordNetLemmatizer()
+
+[wl.lemmatize(w) for w in words] # 이부분이 처음에 이해하기 조금 어려웠는데 알고보니까 예쁜 코드인거 같다.
+
+# okt기준으로 품사를 분석한다
+
+okt.pos(text_kor)
