@@ -1,0 +1,18 @@
+# nltk를 통해 불용어를 제거하자 
+from nltk.corpus import stopwords
+
+nltk.download('stopwords')
+
+example = "drwill is very import person. It's everything"
+
+stop_words = set(stopwords.words('english'))
+
+word_tokens = word_tokenize(example)
+result = []
+for w in word_tokens :
+  if w not in stop_words :
+    result.append(w)
+
+# 결과를 확인해보자
+print('원문', word_tokens)
+print('불용어 제거문', result)
