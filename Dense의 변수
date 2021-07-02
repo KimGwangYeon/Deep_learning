@@ -1,0 +1,14 @@
+# tensorflow.keras의 Dense층을 만들때 사용되는 옵션들
+
+__init__(
+    units,                                         # 출력값 크기
+    activation=None,                               # 활성화함수
+    use_bias=True,                                 # bias사용여부
+    kernel_initializer='glorot_uniform',           # 가중치 초기화함수
+    bias_initializer='zero',                       # bias 초기화함수
+    kernel_regularizer=None,                       # 가중치 정규화 방법
+    bias_regularizer=None,                         # bias 정규화 방법
+    activiity_regularizer=None,                    # 출력 값 정규화 방법
+    kernel_constraint=None,                        # 업데이트 이후 가중치에 적용되는 부가적 함수 
+    bias_constraint=None                           # 업데이트 이후 bias에 적용되는 부가적 함수 
+)
