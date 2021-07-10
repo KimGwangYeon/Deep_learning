@@ -1,0 +1,16 @@
+# 구글에서 mecab을 켜는 법이다
+
+# 깃허브에서 클론해서 쓴다
+!git clone https://github.com/SOMJANG/Mecab-ko-for-Google-Colab.git
+
+cd Mecab-ko-for-Google-Colab/
+
+# 리눅스의 bash명령어를 사용해 설치해준다
+!bash install_mecab-ko_on_colab190912.sh
+
+# konlpy까지 설치해주면
+!pip install konlpy
+from konlpy.tag import Mecab
+
+mecab = Mecab()
+# 객체화시켜 사용할 수 있다.
