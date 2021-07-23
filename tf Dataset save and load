@@ -1,0 +1,22 @@
+# save and load from internet
+# Write
+a = tf.zeros((100, 512), tf.int32)
+ds = tf.data.Dataset.from_tensor_slices((a, a, a, a[:, 0]))
+print(ds)
+# <TensorSliceDataset shapes: ((512,), (512,), (512,), ()), types: (tf.int32, tf.int32, tf.int32, tf.int32)>
+def write_map_fn(x1, x2, x3, x4):
+    return tf.io.serialize_tensor(tf.concat([x1, x2, x3, tf.expand_dims(x4, -1)], -1))
+ds = ds.map(write_map_fn)
+writer = tf.data.experimental.TFRecordWriter('mydata.tfrecord')
+writer.write(ds)
+
+# Read
+def read_map_fn(x):
+    xp = tf.io.parse_tensor(x, tf.int32)
+    # Optionally set shape
+    xp.set_shape([1537])  # Do `xp.set_shape([None, 1537])` if using batches
+    # Use `x[:, :512], ...` if using batches
+    return xp[:512], xp[512:1024], xp[1024:1536], xp[-1]
+ds = tf.data.TFRecordDataset('mydata.tfrecord').map(read_map_fn)
+print(ds)
+# <MapDataset shapes: ((512,), (512,), (512,), ()), types: (tf.int32, tf.int32, tf.int32, tf.int32)>
