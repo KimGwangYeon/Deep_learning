@@ -1,0 +1,14 @@
+# len별로 몇퍼센트씩 있는지 확인해보자
+for column in ['len_AD', 'len_AP'] :
+    print(f'---------For_{column}----------')
+    cnt = {}
+    # print(type(cnt))
+    for num in X[column] :
+        if num in cnt:
+            cnt[num] += 1
+        else :
+            cnt[num] = 1
+    s_cnt= sorted(cnt.items())
+    # print(type(s_cnt))
+    for tpl in s_cnt :
+        print(f'#_of_len({tpl[0]}) :', cnt[tpl[0]], '--------- persantage :', (cnt[tpl[0]]/sum(cnt.values()))*100)
